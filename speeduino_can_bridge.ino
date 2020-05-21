@@ -19,8 +19,8 @@ byte dataCoolant; // current coolant
 byte dataRpmLo;   // current rpm lo byte
 byte dataRpmHi;   // current rpm hi byte
 
-short requiredBytes = 0; // required number of bytes
-short receivedBytes = 0; // received number of bytes
+word requiredBytes = 0; // required number of bytes
+word receivedBytes = 0; // received number of bytes
 byte serialBuffer[255];  // buffer for storing serial data
 
 unsigned long lastMillis;
@@ -123,12 +123,12 @@ bool timeout() {
 
 // send a request for realtime data
 // reset received bytes and set required data length
-void speeduinoRequestRealtime(short data_offset, short data_length) {
-  sSerial.print('r');
-  sSerial.print(SPEEDUINO_CANID);
-  sSerial.print(SPEEDUINO_R_COMMAND);
-  sSerial.print(data_offset);
-  sSerial.print(data_length);
+void speeduinoRequestRealtime(word data_offset, word data_length) {
+  sSerial.write((byte)'r');
+  sSerial.write((byte)SPEEDUINO_CANID);
+  sSerial.write((byte)SPEEDUINO_R_COMMAND);
+  sSerial.write((word)data_offset);
+  sSerial.write((word)data_length);
 
   receivedBytes = 0;
   requiredBytes = data_length + 2;
