@@ -11,9 +11,9 @@ byte dataCoolant; // current coolant
 byte dataRpmLo;   // current rpm lo byte
 byte dataRpmHi;   // current rpm hi byte
 
-byte requiredBytes = 0;             // required number of bytes
-byte receivedBytes = 0;             // received number of bytes
-byte serialBuffer[DATA_TO_REQUEST]; // buffer for storing serial data
+byte requiredBytes = 0; // required number of bytes
+byte receivedBytes = 0; // received number of bytes
+byte serialBuffer[255]; // buffer for storing serial data
 
 unsigned long lastMillis;
 
