@@ -30,7 +30,8 @@ enum State {
   state_request_data,
   state_reading_data,
   state_storing_data,
-  state_writing_canbus
+  state_writing_canbus,
+  state_error
 };
 
 State currentState = state_waiting;
@@ -41,6 +42,9 @@ void setup() {
   Serial.begin(9600);
   sSerial.begin(SPEEDUINO_BAUD);
   // TODO: initialise canbus
+  #ifdef DEBUG
+  Serial.println("started");
+  #endif
   lastMillis = millis();
 }
 
@@ -48,32 +52,57 @@ void loop() {
   switch (currentState) {
     case state_waiting:
       if (timeout()) {
+        #ifdef DEBUG
+        Serial.println("timeout elapsed");
+        #endif
         currentState = state_request_data;
       }
       break;
     case state_request_data:
+      #ifdef DEBUG
+      Serial.println("requesting data");
+      #endif
       speeduinoRequestRealtime(0, DATA_TO_REQUEST);
       currentState = state_reading_data;
+      #ifdef DEBUG
+      Serial.println("reading serial");
+      #endif
       break;
     case state_reading_data:
       if (readSerial()) {
+        #ifdef DEBUG
+        Serial.println("finished reading serial");
+        #endif
         currentState = state_storing_data;
       }
       break;
     case state_storing_data:
       // first byte should be r and second should be command
       if (serialBuffer[0] == (byte)'r' && serialBuffer[1] == SPEEDUINO_R_COMMAND) {
+        #ifdef DEBUG
+        Serial.println("storing data");
+        #endif
         dataCoolant = serialBuffer[2 + COOLANT_OFFSET];
         dataRpmLo = serialBuffer[2 + RPM_OFFSET + 0];
         dataRpmHi = serialBuffer[2 + RPM_OFFSET + 1];
         currentState = state_writing_canbus;
       } else {
-        // error state?
+        #ifdef DEBUG
+        Serial.println("error");
+        Serial.println(serialBuffer[0]);
+        Serial.println(serialBuffer[1]);
+        #endif
+        currentState = state_error;
       }
       break;
     case state_writing_canbus:
+      #ifdef DEBUG
+      Serial.println("writing to canbus");
+      #endif
       stateWritingCanbus();
       currentState = state_waiting;
+      break;
+    case state_error:
       break;
     default:
       // shouldn't get here...
@@ -109,6 +138,9 @@ void speeduinoRequestRealtime(byte data_offset, byte data_length) {
 bool readSerial() {
   while (sSerial.available()) {
     serialBuffer[receivedBytes] = sSerial.read();
+    #ifdef DEBUG
+    Serial.println(serialBuffer[receivedBytes]);
+    #endif
     receivedBytes++;
   }
   return requiredBytes == receivedBytes;
