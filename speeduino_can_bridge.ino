@@ -1,11 +1,19 @@
+#include <SoftwareSerial.h>
+
+#define DEBUG
+
 #define SPEEDUINO_CANID 0x00
 #define SPEEDUINO_R_COMMAND 0x30
+#define SPEEDUINO_BAUD 9600
 
 #define MILLIS_BETWEEN_READS 1000
 
 #define DATA_TO_REQUEST 16
 #define COOLANT_OFFSET 7
 #define RPM_OFFSET 14
+
+#define SW_SERIAL_RX 7
+#define SW_SERIAL_TX 8
 
 byte dataCoolant; // current coolant
 byte dataRpmLo;   // current rpm lo byte
@@ -27,8 +35,11 @@ enum State {
 
 State currentState = state_waiting;
 
+SoftwareSerial sSerial(SW_SERIAL_RX, SW_SERIAL_TX);
+
 void setup() {
   Serial.begin(9600);
+  sSerial.begin(SPEEDUINO_BAUD);
   // TODO: initialise canbus
   lastMillis = millis();
 }
@@ -84,11 +95,11 @@ bool timeout() {
 // send a request for realtime data
 // reset received bytes and set required data length
 void speeduinoRequestRealtime(byte data_offset, byte data_length) {
-  Serial.print('r');
-  Serial.print(SPEEDUINO_CANID);
-  Serial.print(SPEEDUINO_R_COMMAND);
-  Serial.print(data_offset);
-  Serial.print(data_length);
+  sSerial.print('r');
+  sSerial.print(SPEEDUINO_CANID);
+  sSerial.print(SPEEDUINO_R_COMMAND);
+  sSerial.print(data_offset);
+  sSerial.print(data_length);
 
   receivedBytes = 0;
   requiredBytes = data_length + 2;
@@ -96,14 +107,15 @@ void speeduinoRequestRealtime(byte data_offset, byte data_length) {
 
 // read from serial, return true if read enough bytes into buffer
 bool readSerial() {
-  while (Serial.available()) {
-    serialBuffer[receivedBytes] = Serial.read();
+  while (sSerial.available()) {
+    serialBuffer[receivedBytes] = sSerial.read();
     receivedBytes++;
   }
   return requiredBytes == receivedBytes;
 }
 
 void stateWritingCanbus() {
+  #ifdef DEBUG
   Serial.print("coolant: ");
   Serial.print(dataCoolant);
   Serial.println();
@@ -111,6 +123,6 @@ void stateWritingCanbus() {
   Serial.print(dataRpmLo);
   Serial.print(dataRpmHi);
   Serial.println();
-
+  #endif
   // TODO: write to data canbus
 }
