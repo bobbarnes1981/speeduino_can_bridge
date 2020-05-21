@@ -1,4 +1,4 @@
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 
 #define DEBUG
 
@@ -36,11 +36,11 @@ enum State {
 
 State currentState = state_waiting;
 
-SoftwareSerial sSerial(SW_SERIAL_RX, SW_SERIAL_TX);
+//SoftwareSerial sSerial(SW_SERIAL_RX, SW_SERIAL_TX);
 
 void setup() {
   Serial.begin(9600);
-  sSerial.begin(SPEEDUINO_BAUD);
+  Serial3.begin(SPEEDUINO_BAUD);
   // TODO: initialise canbus
   #ifdef DEBUG
   Serial.println("started");
@@ -124,11 +124,11 @@ bool timeout() {
 // send a request for realtime data
 // reset received bytes and set required data length
 void speeduinoRequestRealtime(word data_offset, word data_length) {
-  sSerial.write((byte)'r');
-  sSerial.write((byte)SPEEDUINO_CANID);
-  sSerial.write((byte)SPEEDUINO_R_COMMAND);
-  sSerial.write((word)data_offset);
-  sSerial.write((word)data_length);
+  Serial3.write((byte)'r');
+  Serial3.write((byte)SPEEDUINO_CANID);
+  Serial3.write((byte)SPEEDUINO_R_COMMAND);
+  Serial3.write((word)data_offset);
+  Serial3.write((word)data_length);
 
   receivedBytes = 0;
   requiredBytes = data_length + 2;
@@ -136,14 +136,14 @@ void speeduinoRequestRealtime(word data_offset, word data_length) {
 
 // read from serial, return true if read enough bytes into buffer
 bool readSerial() {
-  while (sSerial.available()) {
-    serialBuffer[receivedBytes] = sSerial.read();
+  while (Serial3.available() && receivedBytes < requiredBytes) {
+    serialBuffer[receivedBytes] = Serial3.read();
     #ifdef DEBUG
     Serial.println(serialBuffer[receivedBytes]);
     #endif
     receivedBytes++;
   }
-  return requiredBytes == receivedBytes;
+  return receivedBytes == requiredBytes;
 }
 
 void stateWritingCanbus() {
