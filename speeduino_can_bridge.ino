@@ -1,3 +1,7 @@
+//https://github.com/autowp/arduino-mcp2515
+#include <can.h>
+#include <mcp2515.h>
+
 #define DEBUG
 
 #ifdef __AVR_ATmega2560__
@@ -23,6 +27,9 @@
 
 #define SW_SERIAL_RX 7
 #define SW_SERIAL_TX 8
+
+#define MCP2515_CS 10
+#define MCP2515_BITRATE CAN_1000KBPS
 
 byte dataCoolant; // current coolant
 byte dataRpmLo;   // current rpm lo byte
@@ -50,12 +57,18 @@ SoftwareSerial speeduino(SW_SERIAL_RX, SW_SERIAL_TX);
 HardwareSerial &speeduino = Serial3;
 #endif
 
+MCP2515 mcp2515(MCP2515_CS);
+struct can_frame canMsg201;
+struct can_frame canMsg420;
+
 State currentState = state_waiting;
 
 void setup() {
   Serial.begin(9600);
   speeduino.begin(SPEEDUINO_BAUD);
-  // TODO: initialise canbus
+  mcp2515.reset();
+  mcp2515.setBitrate(MCP2515_BITRATE);
+  mcp2515.setNormalMode();
   #ifdef DEBUG
   Serial.println("started");
   #endif
@@ -172,5 +185,28 @@ void stateWritingCanbus() {
   Serial.print(dataRpmHi);
   Serial.println();
   #endif
-  // TODO: write to data canbus
+
+  canMsg201.can_id = 0x201;
+  canMsg201.can_dlc = 8;
+  canMsg201.data[0] = dataCoolant;  // ect
+  canMsg201.data[1] = 0x00;         // pres.
+  canMsg201.data[2] = 0x00;         // fuel flow
+  canMsg201.data[3] = 0x00;         // prndl
+  canMsg201.data[4] = 0x00;         // MIL/overdrive
+  canMsg201.data[5] = 0x00;         // safe cooling/PATS
+  canMsg201.data[6] = 0x00;         // charging system status
+  canMsg201.data[7] = 0x00;         // engine off elapsed time
+  mcp2515.sendMessage(&canMsg201);
+
+  canMsg420.can_id = 0x420;
+  canMsg420.can_dlc = 8;
+  canMsg420.data[0] = dataRpmLo;  // rpm
+  canMsg420.data[1] = dataRpmHi;  // rpm
+  canMsg420.data[2] = 0x00;       // 
+  canMsg420.data[3] = 0x00;       // 
+  canMsg420.data[4] = 0x00;       // speed
+  canMsg420.data[5] = 0x00;       // speed
+  canMsg420.data[6] = 0x00;       // 
+  canMsg420.data[7] = 0x00;       // 
+  mcp2515.sendMessage(&canMsg420);
 }
