@@ -138,12 +138,26 @@ void loop() {
       }
       break;
     case state_reading_canbus:
-      if (mcp2515.readMessage(&canMsg4B0) == MCP2515::ERROR_OK && canMsg4B0.can_id == 0x4B0) {
-        #ifdef DEBUG
-        Serial.println("reading canbus message 0x4B0");
-        #endif
-        dataSpeed = word(canMsg4B0.data[4], canMsg4B0.data[5]);
-        currentState = state_writing_canbus;
+      {
+        MCP2515::ERROR e = mcp2515.readMessage(&canMsg4B0);
+        if (e == MCP2515::ERROR_OK) {
+          #ifdef DEBUG
+          Serial.print("got can bus frame with id: ");
+          Serial.println(canMsg4B0.can_id);
+          #endif
+          if (canMsg4B0.can_id == 0x4B0) {
+            #ifdef DEBUG
+            Serial.println("reading canbus message 0x4B0");
+            #endif
+            dataSpeed = word(canMsg4B0.data[4], canMsg4B0.data[5]);
+            currentState = state_writing_canbus;
+          }
+        } else {
+          #ifdef DEBUG
+          Serial.print("can bus error: ");
+          Serial.println(e);
+          #endif
+        }
       }
       break;
     case state_writing_canbus:
@@ -154,6 +168,7 @@ void loop() {
       currentState = state_waiting;
       break;
     case state_error:
+      // do nothing
       break;
     default:
       // shouldn't get here...
