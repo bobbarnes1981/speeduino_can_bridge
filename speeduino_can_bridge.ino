@@ -223,6 +223,8 @@ bool readSerial() {
 }
 
 void stateWritingCanbus() {
+  word adjustedRpm = dataRpm * 4;
+
   #ifdef DEBUG
   Serial.print("coolant: ");
   Serial.print(dataCoolant, DEC);
@@ -232,10 +234,11 @@ void stateWritingCanbus() {
   Serial.println();
   Serial.print("speed: ");
   Serial.print(dataSpeed, DEC);
+  Serial.print(" (");
+  Serial.print((dataSpeed * 0.0066)-67, DEC);
+  Serial.print("mph)");
   Serial.println();
   #endif
-
-  word adjustedRpm = dataRpm * 4;
 
   canMsg201.can_id = 0x201;
   canMsg201.can_dlc = 8;
