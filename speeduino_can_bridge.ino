@@ -32,7 +32,8 @@
 #define MCP2515_BITRATE CAN_1000KBPS
 
 byte dataCoolant; // current coolant
-word dataRpm;   // current rpm
+word dataRpm;     // current rpm
+word dataSpeed;   // current speed
 
 word requiredBytes = 0; // required number of bytes
 word receivedBytes = 0; // received number of bytes
@@ -45,6 +46,7 @@ enum State {
   state_request_data,
   state_reading_data,
   state_storing_data,
+  state_reading_canbus,
   state_writing_canbus,
   state_error
 };
@@ -59,6 +61,7 @@ HardwareSerial &speeduino = Serial3;
 MCP2515 mcp2515(MCP2515_CS);
 struct can_frame canMsg201;
 struct can_frame canMsg420;
+struct can_frame canMsg4B0;
 
 State currentState = state_waiting;
 
@@ -110,7 +113,7 @@ void loop() {
         #endif
         dataCoolant = serialBuffer[2 + COOLANT_OFFSET];
         dataRpm = word(serialBuffer[2 + RPM_OFFSET + 1], serialBuffer[2 + RPM_OFFSET + 0]);
-        currentState = state_writing_canbus;
+        currentState = state_reading_canbus;
       } else {
         #ifdef DEBUG
         Serial.println("error");
@@ -118,6 +121,15 @@ void loop() {
         Serial.println(serialBuffer[1]);
         #endif
         currentState = state_error;
+      }
+      break;
+    case state_reading_canbus:
+      if (mcp2515.readMessage(&canMsg4B0) == MCP2515::ERROR_OK && canMsg4B0.can_id == 0x4B0) {
+        #ifdef DEBUG
+        Serial.println("reading canbus message 0x4B0");
+        #endif
+        dataSpeed = word(canMsg4B0.data[4], canMsg4B0.data[5]);
+        currentState = state_writing_canbus;
       }
       break;
     case state_writing_canbus:
@@ -181,6 +193,9 @@ void stateWritingCanbus() {
   Serial.print("rpm: ");
   Serial.print(dataRpm);
   Serial.println();
+  Serial.print("speed: ");
+  Serial.print(dataSpeed);
+  Serial.println();
   #endif
 
   word adjustedRpm = dataRpm * 4;
@@ -191,8 +206,8 @@ void stateWritingCanbus() {
   canMsg201.data[1] = highByte(adjustedRpm);// rpm
   canMsg201.data[2] = 0x00;                 // 
   canMsg201.data[3] = 0x00;                 // 
-  canMsg201.data[4] = 0x00;                 // speed
-  canMsg201.data[5] = 0x00;                 // speed
+  canMsg201.data[4] = lowByte(dataSpeed);   // speed
+  canMsg201.data[5] = highByte(dataSpeed);  // speed
   canMsg201.data[6] = 0x00;                 // 
   canMsg201.data[7] = 0x00;                 // 
   mcp2515.sendMessage(&canMsg201);
