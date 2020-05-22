@@ -17,6 +17,7 @@
 
 #define SPEEDUINO_CANID 0x00
 #define SPEEDUINO_R_COMMAND 0x30
+#define SERIAL_BAUD 9600
 #define SPEEDUINO_BAUD 115200
 
 #define MILLIS_BETWEEN_READS 1000
@@ -66,13 +67,22 @@ struct can_frame canMsg4B0;
 State currentState = state_waiting;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(SERIAL_BAUD);
   speeduino.begin(SPEEDUINO_BAUD);
   mcp2515.reset();
   mcp2515.setBitrate(MCP2515_BITRATE);
   mcp2515.setNormalMode();
   #ifdef DEBUG
-  Serial.println("started");
+  Serial.println("speeduino_can_bridge");
+  Serial.print("serial @ ");
+  Serial.println(SERIAL_BAUD, DEC);
+  #ifdef USE_SW_SERIAL
+  Serial.print("sw serial @");
+  #endif
+  #ifdef USE_HW_SERIAL3
+  Serial.print("hw serial3 @");
+  #endif
+  Serial.println(SPEEDUINO_BAUD, DEC);
   #endif
   lastMillis = millis();
 }
@@ -178,7 +188,8 @@ bool readSerial() {
   while (speeduino.available() && receivedBytes < requiredBytes) {
     serialBuffer[receivedBytes] = speeduino.read();
     #ifdef DEBUG
-    Serial.println(serialBuffer[receivedBytes]);
+    Serial.print("0x");
+    Serial.println(serialBuffer[receivedBytes], HEX);
     #endif
     receivedBytes++;
   }
@@ -188,13 +199,13 @@ bool readSerial() {
 void stateWritingCanbus() {
   #ifdef DEBUG
   Serial.print("coolant: ");
-  Serial.print(dataCoolant);
+  Serial.print(dataCoolant, DEC);
   Serial.println();
   Serial.print("rpm: ");
-  Serial.print(dataRpm);
+  Serial.print(dataRpm, DEC);
   Serial.println();
   Serial.print("speed: ");
-  Serial.print(dataSpeed);
+  Serial.print(dataSpeed, DEC);
   Serial.println();
   #endif
 
