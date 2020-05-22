@@ -32,6 +32,8 @@
 #define MCP2515_CS 10
 #define MCP2515_BITRATE CAN_1000KBPS
 
+#define LED_TIME 500
+
 byte dataCoolant; // current coolant
 word dataRpm;     // current rpm
 word dataSpeed;   // current speed
@@ -67,6 +69,7 @@ struct can_frame canMsg4B0;
 State currentState = state_waiting;
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(SERIAL_BAUD);
   speeduino.begin(SPEEDUINO_BAUD);
   mcp2515.reset();
@@ -89,6 +92,7 @@ void setup() {
 }
 
 void loop() {
+  digitalWrite(LED_BUILTIN, (millis() % LED_TIME) > LED_TIME / 2);
   switch (currentState) {
     case state_waiting:
       if (timeout()) {
@@ -143,7 +147,7 @@ void loop() {
         if (e == MCP2515::ERROR_OK) {
           #ifdef DEBUG
           Serial.print("got can bus frame with id: ");
-          Serial.println(canMsg4B0.can_id);
+          Serial.println(canMsg4B0.can_id, HEX);
           #endif
           if (canMsg4B0.can_id == 0x4B0) {
             #ifdef DEBUG
@@ -154,8 +158,11 @@ void loop() {
           }
         } else {
           #ifdef DEBUG
-          Serial.print("can bus error: ");
-          Serial.println(e);
+          // 5 is "No Message"
+          if (e != 5) {
+            Serial.print("can bus error: ");
+            Serial.println(e, DEC);
+          }
           #endif
         }
       }
