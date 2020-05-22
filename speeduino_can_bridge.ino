@@ -239,12 +239,12 @@ void stateWritingCanbus() {
 
   canMsg201.can_id = 0x201;
   canMsg201.can_dlc = 8;
-  canMsg201.data[0] = lowByte(adjustedRpm); // rpm
-  canMsg201.data[1] = highByte(adjustedRpm);// rpm
+  canMsg201.data[0] = highByte(adjustedRpm);// rpm
+  canMsg201.data[1] = lowByte(adjustedRpm); // rpm
   canMsg201.data[2] = 0x00;                 // 
   canMsg201.data[3] = 0x00;                 // 
-  canMsg201.data[4] = lowByte(dataSpeed);   // speed
-  canMsg201.data[5] = highByte(dataSpeed);  // speed
+  canMsg201.data[4] = highByte(dataSpeed);  // speed
+  canMsg201.data[5] = lowByte(dataSpeed);   // speed
   canMsg201.data[6] = 0x00;                 // 
   canMsg201.data[7] = 0x00;                 // 
   mcp2515.sendMessage(&canMsg201);
