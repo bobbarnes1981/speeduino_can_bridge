@@ -32,8 +32,7 @@
 #define MCP2515_BITRATE CAN_1000KBPS
 
 byte dataCoolant; // current coolant
-byte dataRpmLo;   // current rpm lo byte
-byte dataRpmHi;   // current rpm hi byte
+word dataRpm;   // current rpm
 
 word requiredBytes = 0; // required number of bytes
 word receivedBytes = 0; // received number of bytes
@@ -110,8 +109,7 @@ void loop() {
         Serial.println("storing data");
         #endif
         dataCoolant = serialBuffer[2 + COOLANT_OFFSET];
-        dataRpmLo = serialBuffer[2 + RPM_OFFSET + 0];
-        dataRpmHi = serialBuffer[2 + RPM_OFFSET + 1];
+        dataRpm = word(serialBuffer[2 + RPM_OFFSET + 1], serialBuffer[2 + RPM_OFFSET + 0]);
         currentState = state_writing_canbus;
       } else {
         #ifdef DEBUG
@@ -181,21 +179,22 @@ void stateWritingCanbus() {
   Serial.print(dataCoolant);
   Serial.println();
   Serial.print("rpm: ");
-  Serial.print(dataRpmLo);
-  Serial.print(dataRpmHi);
+  Serial.print(dataRpm);
   Serial.println();
   #endif
 
+  word adjustedRpm = dataRpm * 4;
+
   canMsg201.can_id = 0x201;
   canMsg201.can_dlc = 8;
-  canMsg201.data[0] = dataRpmLo;    // rpm
-  canMsg201.data[1] = dataRpmHi;    // rpm
-  canMsg201.data[2] = 0x00;         // 
-  canMsg201.data[3] = 0x00;         // 
-  canMsg201.data[4] = 0x00;         // speed
-  canMsg201.data[5] = 0x00;         // speed
-  canMsg201.data[6] = 0x00;         // 
-  canMsg201.data[7] = 0x00;         // 
+  canMsg201.data[0] = lowByte(adjustedRpm); // rpm
+  canMsg201.data[1] = highByte(adjustedRpm);// rpm
+  canMsg201.data[2] = 0x00;                 // 
+  canMsg201.data[3] = 0x00;                 // 
+  canMsg201.data[4] = 0x00;                 // speed
+  canMsg201.data[5] = 0x00;                 // speed
+  canMsg201.data[6] = 0x00;                 // 
+  canMsg201.data[7] = 0x00;                 // 
   mcp2515.sendMessage(&canMsg201);
 
   canMsg420.can_id = 0x420;
