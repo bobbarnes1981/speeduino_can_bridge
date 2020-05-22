@@ -1,5 +1,3 @@
-//#include <SoftwareSerial.h>
-
 #define DEBUG
 
 #define SPEEDUINO_CANID 0x00
@@ -11,9 +9,6 @@
 #define DATA_TO_REQUEST 16
 #define COOLANT_OFFSET 7
 #define RPM_OFFSET 14
-
-#define SW_SERIAL_RX 7
-#define SW_SERIAL_TX 8
 
 byte dataCoolant; // current coolant
 byte dataRpmLo;   // current rpm lo byte
@@ -35,8 +30,6 @@ enum State {
 };
 
 State currentState = state_waiting;
-
-//SoftwareSerial sSerial(SW_SERIAL_RX, SW_SERIAL_TX);
 
 void setup() {
   Serial.begin(9600);
@@ -127,8 +120,10 @@ void speeduinoRequestRealtime(word data_offset, word data_length) {
   Serial3.write((byte)'r');
   Serial3.write((byte)SPEEDUINO_CANID);
   Serial3.write((byte)SPEEDUINO_R_COMMAND);
-  Serial3.write((word)data_offset);
-  Serial3.write((word)data_length);
+  Serial3.write((byte)data_offset);
+  Serial3.write((byte)(data_offset>>8));
+  Serial3.write((byte)data_length);
+  Serial3.write((byte)(data_length>>8));
 
   receivedBytes = 0;
   requiredBytes = data_length + 2;
