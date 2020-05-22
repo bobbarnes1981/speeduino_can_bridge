@@ -74,8 +74,9 @@ void setup() {
   mcp2515.setNormalMode();
   #ifdef DEBUG
   Serial.println("speeduino_can_bridge");
-  Serial.print("serial @ ");
+  Serial.print("debug on serial @ ");
   Serial.println(SERIAL_BAUD, DEC);
+  Serial.print("speeduino on ");
   #ifdef USE_SW_SERIAL
   Serial.print("sw serial @");
   #endif
@@ -124,6 +125,9 @@ void loop() {
         dataCoolant = serialBuffer[2 + COOLANT_OFFSET];
         dataRpm = word(serialBuffer[2 + RPM_OFFSET + 1], serialBuffer[2 + RPM_OFFSET + 0]);
         currentState = state_reading_canbus;
+        #ifdef DEBUG
+        Serial.println("waiting canbus message 0x4B0");
+        #endif
       } else {
         #ifdef DEBUG
         Serial.println("error");
