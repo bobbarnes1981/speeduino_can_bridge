@@ -188,25 +188,25 @@ void stateWritingCanbus() {
 
   canMsg201.can_id = 0x201;
   canMsg201.can_dlc = 8;
-  canMsg201.data[0] = dataCoolant;  // ect
-  canMsg201.data[1] = 0x00;         // pres.
-  canMsg201.data[2] = 0x00;         // fuel flow
-  canMsg201.data[3] = 0x00;         // prndl
-  canMsg201.data[4] = 0x00;         // MIL/overdrive
-  canMsg201.data[5] = 0x00;         // safe cooling/PATS
-  canMsg201.data[6] = 0x00;         // charging system status
-  canMsg201.data[7] = 0x00;         // engine off elapsed time
+  canMsg201.data[0] = dataRpmLo;    // rpm
+  canMsg201.data[1] = dataRpmHi;    // rpm
+  canMsg201.data[2] = 0x00;         // 
+  canMsg201.data[3] = 0x00;         // 
+  canMsg201.data[4] = 0x00;         // speed
+  canMsg201.data[5] = 0x00;         // speed
+  canMsg201.data[6] = 0x00;         // 
+  canMsg201.data[7] = 0x00;         // 
   mcp2515.sendMessage(&canMsg201);
 
   canMsg420.can_id = 0x420;
   canMsg420.can_dlc = 8;
-  canMsg420.data[0] = dataRpmLo;  // rpm
-  canMsg420.data[1] = dataRpmHi;  // rpm
-  canMsg420.data[2] = 0x00;       // 
-  canMsg420.data[3] = 0x00;       // 
-  canMsg420.data[4] = 0x00;       // speed
-  canMsg420.data[5] = 0x00;       // speed
-  canMsg420.data[6] = 0x00;       // 
-  canMsg420.data[7] = 0x00;       // 
+  canMsg420.data[0] = dataCoolant;  // ect
+  canMsg420.data[1] = 0x00;         // pres.
+  canMsg420.data[2] = 0x00;         // fuel flow
+  canMsg420.data[3] = 0x00;         // prndl
+  canMsg420.data[4] = 0x00;         // MIL/overdrive
+  canMsg420.data[5] = 0x00;         // safe cooling/PATS
+  canMsg420.data[6] = 0x00;         // charging system status
+  canMsg420.data[7] = 0x00;         // engine off elapsed time
   mcp2515.sendMessage(&canMsg420);
 }
