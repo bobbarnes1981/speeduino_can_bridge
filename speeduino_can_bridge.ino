@@ -149,7 +149,7 @@ void loop() {
             #ifdef DEBUG
             Serial.println("reading canbus message 0x4B0");
             #endif
-            dataSpeed = word(canMsg4B0.data[4], canMsg4B0.data[5]);
+            dataSpeed = word(canMsg4B0.data[5], canMsg4B0.data[4]);
             currentState = state_writing_canbus;
           }
         } else {
