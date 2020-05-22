@@ -1,5 +1,16 @@
 #define DEBUG
 
+#ifdef __AVR_ATmega2560__
+#define USE_HW_SERIAL3
+#endif
+#ifdef __AVR_ATmega328P__
+#define USE_SW_SERIAL
+#endif
+
+#ifdef USE_SW_SERIAL
+#include <SoftwareSerial.h>
+#endif
+
 #define SPEEDUINO_CANID 0x00
 #define SPEEDUINO_R_COMMAND 0x30
 #define SPEEDUINO_BAUD 115200
@@ -9,6 +20,9 @@
 #define DATA_TO_REQUEST 16
 #define COOLANT_OFFSET 7
 #define RPM_OFFSET 14
+
+#define SW_SERIAL_RX 7
+#define SW_SERIAL_TX 8
 
 byte dataCoolant; // current coolant
 byte dataRpmLo;   // current rpm lo byte
@@ -29,11 +43,18 @@ enum State {
   state_error
 };
 
+#ifdef USE_SW_SERIAL
+SoftwareSerial speeduino(SW_SERIAL_RX, SW_SERIAL_TX);
+#endif
+#ifdef USE_HW_SERIAL3
+HardwareSerial &speeduino = Serial3;
+#endif
+
 State currentState = state_waiting;
 
 void setup() {
   Serial.begin(9600);
-  Serial3.begin(SPEEDUINO_BAUD);
+  speeduino.begin(SPEEDUINO_BAUD);
   // TODO: initialise canbus
   #ifdef DEBUG
   Serial.println("started");
@@ -117,13 +138,13 @@ bool timeout() {
 // send a request for realtime data
 // reset received bytes and set required data length
 void speeduinoRequestRealtime(word data_offset, word data_length) {
-  Serial3.write((byte)'r');
-  Serial3.write((byte)SPEEDUINO_CANID);
-  Serial3.write((byte)SPEEDUINO_R_COMMAND);
-  Serial3.write((byte)data_offset);
-  Serial3.write((byte)(data_offset>>8));
-  Serial3.write((byte)data_length);
-  Serial3.write((byte)(data_length>>8));
+  speeduino.write((byte)'r');
+  speeduino.write((byte)SPEEDUINO_CANID);
+  speeduino.write((byte)SPEEDUINO_R_COMMAND);
+  speeduino.write((byte)lowByte(data_offset));
+  speeduino.write((byte)highByte(data_offset));
+  speeduino.write((byte)lowByte(data_length));
+  speeduino.write((byte)highByte(data_length));
 
   receivedBytes = 0;
   requiredBytes = data_length + 2;
@@ -131,8 +152,8 @@ void speeduinoRequestRealtime(word data_offset, word data_length) {
 
 // read from serial, return true if read enough bytes into buffer
 bool readSerial() {
-  while (Serial3.available() && receivedBytes < requiredBytes) {
-    serialBuffer[receivedBytes] = Serial3.read();
+  while (speeduino.available() && receivedBytes < requiredBytes) {
+    serialBuffer[receivedBytes] = speeduino.read();
     #ifdef DEBUG
     Serial.println(serialBuffer[receivedBytes]);
     #endif
