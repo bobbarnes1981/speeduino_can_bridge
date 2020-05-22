@@ -11,6 +11,11 @@
 #define USE_SW_SERIAL
 #endif
 
+#ifdef DEBUG
+#include <stdio.h>
+char debugBuffer[255];
+#endif
+
 #ifdef USE_SW_SERIAL
 #include <SoftwareSerial.h>
 #endif
@@ -54,6 +59,9 @@ enum State {
   state_error
 };
 
+#ifdef DEBUG
+HardwareSerial &debugger = Serial;
+#endif
 #ifdef USE_SW_SERIAL
 SoftwareSerial speeduino(SW_SERIAL_RX, SW_SERIAL_TX);
 #endif
@@ -70,23 +78,24 @@ State currentState = state_waiting;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
-  Serial.begin(SERIAL_BAUD);
+  #ifdef DEBUG
+  debugger.begin(SERIAL_BAUD);
+  #endif
   speeduino.begin(SPEEDUINO_BAUD);
   mcp2515.reset();
   mcp2515.setBitrate(MCP2515_BITRATE);
   mcp2515.setNormalMode();
   #ifdef DEBUG
-  Serial.println("speeduino_can_bridge");
-  Serial.print("debug on serial @ ");
-  Serial.println(SERIAL_BAUD, DEC);
-  Serial.print("speeduino on ");
+  debugger.println("speeduino_can_bridge");
+  sprintf(debugBuffer, "debug on serial @ %d", SERIAL_BAUD);
+  debugger.println(debugBuffer);
   #ifdef USE_SW_SERIAL
-  Serial.print("sw serial @");
+  sprintf(debugBuffer, "speeduino on sw serial @ %d", (int)SPEEDUINO_BAUD);
   #endif
   #ifdef USE_HW_SERIAL3
-  Serial.print("hw serial3 @");
+  sprintf(debugBuffer, "speeduino on hw serial3 @ %d", (int)SPEEDUINO_BAUD);
   #endif
-  Serial.println(SPEEDUINO_BAUD, DEC);
+  debugger.println(debugBuffer);
   #endif
   lastMillis = millis();
 }
@@ -97,25 +106,25 @@ void loop() {
     case state_waiting:
       if (timeout()) {
         #ifdef DEBUG
-        Serial.println("timeout elapsed");
+        debugger.println("timeout elapsed");
         #endif
         currentState = state_request_data;
       }
       break;
     case state_request_data:
       #ifdef DEBUG
-      Serial.println("requesting data");
+      debugger.println("requesting data");
       #endif
       speeduinoRequestRealtime(0, DATA_TO_REQUEST);
       currentState = state_reading_data;
       #ifdef DEBUG
-      Serial.println("reading serial");
+      debugger.println("reading serial");
       #endif
       break;
     case state_reading_data:
       if (readSerial()) {
         #ifdef DEBUG
-        Serial.println("finished reading serial");
+        debugger.println("finished reading serial");
         #endif
         currentState = state_storing_data;
       }
@@ -124,19 +133,18 @@ void loop() {
       // first byte should be r and second should be command
       if (serialBuffer[0] == (byte)'r' && serialBuffer[1] == SPEEDUINO_R_COMMAND) {
         #ifdef DEBUG
-        Serial.println("storing data");
+        debugger.println("storing data");
         #endif
         dataCoolant = serialBuffer[2 + COOLANT_OFFSET];
         dataRpm = word(serialBuffer[2 + RPM_OFFSET + 1], serialBuffer[2 + RPM_OFFSET + 0]);
         currentState = state_reading_canbus;
         #ifdef DEBUG
-        Serial.println("waiting canbus message 0x4B0");
+        debugger.println("waiting canbus message 0x4B0");
         #endif
       } else {
         #ifdef DEBUG
-        Serial.println("error");
-        Serial.println(serialBuffer[0]);
-        Serial.println(serialBuffer[1]);
+        sprintf(debugBuffer, "error 0x%02X 0x%02X", serialBuffer[0], serialBuffer[1]);
+        debugger.println(debugBuffer);
         #endif
         currentState = state_error;
       }
@@ -146,12 +154,12 @@ void loop() {
         MCP2515::ERROR e = mcp2515.readMessage(&canMsg4B0);
         if (e == MCP2515::ERROR_OK) {
           #ifdef DEBUG
-          Serial.print("got can bus frame with id: ");
-          Serial.println(canMsg4B0.can_id, HEX);
+          sprintf(debugBuffer, "got can bus frame with id: 0x%02X", (int)canMsg4B0.can_id);
+          debugger.println(debugBuffer);
           #endif
           if (canMsg4B0.can_id == 0x4B0) {
             #ifdef DEBUG
-            Serial.println("reading canbus message 0x4B0");
+            debugger.println("reading canbus message 0x4B0");
             #endif
             dataSpeed = word(canMsg4B0.data[5], canMsg4B0.data[4]);
             currentState = state_writing_canbus;
@@ -160,8 +168,8 @@ void loop() {
           #ifdef DEBUG
           // 5 is "No Message"
           if (e != 5) {
-            Serial.print("can bus error: ");
-            Serial.println(e, DEC);
+            sprintf(debugBuffer, "can bus error: %d", e);
+            debugger.println(debugBuffer);
           }
           #endif
         }
@@ -169,7 +177,7 @@ void loop() {
       break;
     case state_writing_canbus:
       #ifdef DEBUG
-      Serial.println("writing to canbus");
+      debugger.println("writing to canbus");
       #endif
       stateWritingCanbus();
       currentState = state_waiting;
@@ -214,8 +222,8 @@ bool readSerial() {
   while (speeduino.available() && receivedBytes < requiredBytes) {
     serialBuffer[receivedBytes] = speeduino.read();
     #ifdef DEBUG
-    Serial.print("0x");
-    Serial.println(serialBuffer[receivedBytes], HEX);
+    sprintf(debugBuffer, "0x%02X", serialBuffer[receivedBytes]);
+    debugger.println(debugBuffer);
     #endif
     receivedBytes++;
   }
@@ -226,18 +234,14 @@ void stateWritingCanbus() {
   word adjustedRpm = dataRpm * 4;
 
   #ifdef DEBUG
-  Serial.print("coolant: ");
-  Serial.print(dataCoolant, DEC);
-  Serial.println();
-  Serial.print("rpm: ");
-  Serial.print(dataRpm, DEC);
-  Serial.println();
-  Serial.print("speed: ");
-  Serial.print(dataSpeed, DEC);
-  Serial.print(" (");
-  Serial.print((dataSpeed * 0.0066)-67, DEC);
-  Serial.print("mph)");
-  Serial.println();
+  sprintf(debugBuffer, "coolant: %d", dataCoolant);
+  debugger.println(debugBuffer);
+  
+  sprintf(debugBuffer, "rpm: %d", dataRpm);
+  debugger.println(debugBuffer);
+  
+  sprintf(debugBuffer, "speed: %d (%fmph)", dataSpeed, (dataSpeed * 0.0066)-67);
+  debugger.println(debugBuffer);
   #endif
 
   canMsg201.can_id = 0x201;
