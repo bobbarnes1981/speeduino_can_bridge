@@ -240,7 +240,7 @@ void stateWritingCanbus() {
   sprintf(debugBuffer, "rpm: %d", dataRpm);
   debugger.println(debugBuffer);
   
-  sprintf(debugBuffer, "speed: %d (%fmph)", dataSpeed, (dataSpeed * 0.0066)-67);
+  sprintf(debugBuffer, "speed: %d (%dfmph)", dataSpeed, (int)((dataSpeed * 0.0066)-67));
   debugger.println(debugBuffer);
   #endif
 
