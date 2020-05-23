@@ -167,8 +167,7 @@ void loop() {
           }
         } else {
           #ifdef DEBUG
-          // 5 is "No Message"
-          if (e != 5) {
+          if (e != MCP2515::ERROR_NOMSG) {
             sprintf(debugBuffer, "can bus error: %d", e);
             debugger.println(debugBuffer);
           }
