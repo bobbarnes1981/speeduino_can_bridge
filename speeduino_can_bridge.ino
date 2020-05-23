@@ -1,4 +1,3 @@
-//https://github.com/autowp/arduino-mcp2515
 #include <can.h>
 #include <mcp2515.h>
 
@@ -20,12 +19,12 @@ char debugBuffer[255];
 #include <SoftwareSerial.h>
 #endif
 
-#define SPEEDUINO_CANID 0x00
+#define SPEEDUINO_CANID 0x5A1
 #define SPEEDUINO_R_COMMAND 0x30
-#define SERIAL_BAUD 9600
+#define SERIAL_BAUD 115200
 #define SPEEDUINO_BAUD 115200
 
-#define MILLIS_BETWEEN_READS 1000
+#define MILLIS_BETWEEN_READS 100
 
 #define DATA_TO_REQUEST 16
 #define COOLANT_OFFSET 7
@@ -34,8 +33,8 @@ char debugBuffer[255];
 #define SW_SERIAL_RX 7
 #define SW_SERIAL_TX 8
 
-#define MCP2515_CS 10
-#define MCP2515_BITRATE CAN_1000KBPS
+#define MCP2515_CS 53
+#define MCP2515_BITRATE CAN_500KBPS
 #define MCP2515_CLOCK MCP_8MHZ
 
 #define LED_TIME 500
@@ -88,13 +87,13 @@ void setup() {
   mcp2515.setNormalMode();
   #ifdef DEBUG
   debugger.println("speeduino_can_bridge");
-  sprintf(debugBuffer, "debug on serial @ %d", SERIAL_BAUD);
+  sprintf(debugBuffer, "debug on serial @ %ld", SERIAL_BAUD);
   debugger.println(debugBuffer);
   #ifdef USE_SW_SERIAL
-  sprintf(debugBuffer, "speeduino on sw serial @ %d", (int)SPEEDUINO_BAUD);
+  sprintf(debugBuffer, "speeduino on sw serial @ %lld ", (int)SPEEDUINO_BAUD);
   #endif
   #ifdef USE_HW_SERIAL3
-  sprintf(debugBuffer, "speeduino on hw serial3 @ %d", (int)SPEEDUINO_BAUD);
+  sprintf(debugBuffer, "speeduino on hw serial3 @ %lld ", (int)SPEEDUINO_BAUD);
   #endif
   debugger.println(debugBuffer);
   #endif
@@ -162,7 +161,7 @@ void loop() {
             #ifdef DEBUG
             debugger.println("reading canbus message 0x4B0");
             #endif
-            dataSpeed = word(canMsg4B0.data[5], canMsg4B0.data[4]);
+            dataSpeed = word(canMsg4B0.data[4], canMsg4B0.data[5]);
             currentState = state_writing_canbus;
           }
         } else {
@@ -233,6 +232,14 @@ bool readSerial() {
 void stateWritingCanbus() {
   word adjustedRpm = dataRpm * 4;
 
+  byte adjustedCoolant;
+  
+  if (dataCoolant<=60) adjustedCoolant=0x28;
+  else if (dataCoolant<=74) adjustedCoolant=0x63;
+  else if (dataCoolant<=90) adjustedCoolant=0x88;
+  else if (dataCoolant<=99) adjustedCoolant=0x9C;
+  else adjustedCoolant=0xD0;
+
   #ifdef DEBUG
   sprintf(debugBuffer, "coolant: %d", dataCoolant);
   debugger.println(debugBuffer);
@@ -240,7 +247,7 @@ void stateWritingCanbus() {
   sprintf(debugBuffer, "rpm: %d", dataRpm);
   debugger.println(debugBuffer);
   
-  sprintf(debugBuffer, "speed: %d (%dfmph)", dataSpeed, (int)((dataSpeed * 0.0066)-67));
+  sprintf(debugBuffer, "speed: %d (%dmph)", dataSpeed, (int)((dataSpeed * 0.0066)-66));
   debugger.println(debugBuffer);
   #endif
 
@@ -258,7 +265,7 @@ void stateWritingCanbus() {
 
   canMsg420.can_id = 0x420;
   canMsg420.can_dlc = 8;
-  canMsg420.data[0] = dataCoolant;  // ect
+  canMsg420.data[0] = adjustedCoolant;  // ect
   canMsg420.data[1] = 0x00;         // pres.
   canMsg420.data[2] = 0x00;         // fuel flow
   canMsg420.data[3] = 0x00;         // prndl
