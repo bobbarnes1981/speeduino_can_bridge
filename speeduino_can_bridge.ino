@@ -36,6 +36,7 @@ char debugBuffer[255];
 
 #define MCP2515_CS 10
 #define MCP2515_BITRATE CAN_1000KBPS
+#define MCP2515_CLOCK MCP_8MHZ
 
 #define LED_TIME 500
 
@@ -83,7 +84,7 @@ void setup() {
   #endif
   speeduino.begin(SPEEDUINO_BAUD);
   mcp2515.reset();
-  mcp2515.setBitrate(MCP2515_BITRATE);
+  mcp2515.setBitrate(MCP2515_BITRATE, MCP2515_CLOCK);
   mcp2515.setNormalMode();
   #ifdef DEBUG
   debugger.println("speeduino_can_bridge");
