@@ -5,9 +5,11 @@
 
 #ifdef __AVR_ATmega2560__
 #define USE_HW_SERIAL3
+#define SPI_CS 53
 #endif
 #ifdef __AVR_ATmega328P__
 #define USE_SW_SERIAL
+#define SPI_CS 10
 #endif
 
 #ifdef DEBUG
@@ -33,11 +35,12 @@ char debugBuffer[255];
 #define SW_SERIAL_RX 7
 #define SW_SERIAL_TX 8
 
-#define MCP2515_CS 53
+#define MCP2515_CS SPI_CS
 #define MCP2515_BITRATE CAN_500KBPS
 #define MCP2515_CLOCK MCP_8MHZ
 
 #define LED_TIME 500
+#define LED_PIN 9
 
 byte dataCoolant; // current coolant
 word dataRpm;     // current rpm
@@ -77,7 +80,7 @@ struct can_frame canMsg4B0;
 State currentState = state_waiting;
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
   #ifdef DEBUG
   debugger.begin(SERIAL_BAUD);
   #endif
@@ -87,13 +90,13 @@ void setup() {
   mcp2515.setNormalMode();
   #ifdef DEBUG
   debugger.println("speeduino_can_bridge");
-  sprintf(debugBuffer, "debug on serial @ %ld", SERIAL_BAUD);
+  sprintf(debugBuffer, "debug on serial @ %li", SERIAL_BAUD);
   debugger.println(debugBuffer);
   #ifdef USE_SW_SERIAL
-  sprintf(debugBuffer, "speeduino on sw serial @ %lld ", (int)SPEEDUINO_BAUD);
+  sprintf(debugBuffer, "speeduino on sw serial @ %li ", SPEEDUINO_BAUD);
   #endif
   #ifdef USE_HW_SERIAL3
-  sprintf(debugBuffer, "speeduino on hw serial3 @ %lld ", (int)SPEEDUINO_BAUD);
+  sprintf(debugBuffer, "speeduino on hw serial3 @ %li ", SPEEDUINO_BAUD);
   #endif
   debugger.println(debugBuffer);
   #endif
@@ -101,7 +104,7 @@ void setup() {
 }
 
 void loop() {
-  digitalWrite(LED_BUILTIN, (millis() % LED_TIME) > LED_TIME / 2);
+  digitalWrite(LED_PIN, (millis() % LED_TIME) > LED_TIME / 2);
   switch (currentState) {
     case state_waiting:
       if (timeout()) {
