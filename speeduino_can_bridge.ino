@@ -2,7 +2,9 @@
 #include <mcp2515.h>
 
 #define DEBUG
+
 #define RESEND_DELAYED_REQUEST
+#define RESTART_DELAYED_REQUEST
 
 #ifdef __AVR_ATmega2560__
 #define USE_HW_SERIAL3
@@ -29,6 +31,7 @@ char debugBuffer[255];
 #define SPEEDUINO_COMMAND 'r'
 #define SPEEDUINO_COMMAND_TYPE 0x30
 #define SPEEDUINO_BAUD 115200
+#define SPEEDUINO_RESTART_COUNT 10
 
 #define DATA_TO_REQUEST 16
 #define COOLANT_OFFSET 7
@@ -84,6 +87,10 @@ bool canbusSend420Delayed = false;
 // true if request sent to speeduino
 // false if awaiting response
 bool speeduinoRequested = false;
+
+#ifdef RESTART_DELAYED_REQUEST
+bool speeduinoFetchDelayedCount = 0;
+#endif
 
 #ifdef DEBUG
 HardwareSerial &debugger = Serial;
@@ -153,8 +160,13 @@ void loop() {
       #ifdef RESEND_DELAYED_REQUEST
       speeduinoRequested = false;
       #endif
+      
       speeduino_reset_data();
       speeduinoFetchDelayed = true;
+
+      #ifdef RESTART_DELAYED_REQUEST
+      speeduino_restart();
+      #endif
 
       #ifdef DEBUG
       debugger.println("speeduino request delayed");
@@ -259,6 +271,21 @@ void speeduino_reset_data() {
   dataCoolant = DEFAULT_COOLANT;
   dataRpm = DEFAULT_RPM;
 }
+
+#ifdef RESTART_DELAYED_REQUEST
+void speeduino_restart() {
+  speeduinoFetchDelayedCount++;
+  if (speeduinoFetchDelayedCount >= SPEEDUINO_RESTART_COUNT) {
+    #ifdef DEBUG
+    debugger.println("restarting speeduio serial connection");
+    #endif
+    
+    speeduino.end();
+    speeduino.begin(SPEEDUINO_BAUD);
+    speeduinoFetchDelayedCount = 0;
+  }
+}
+#endif
 
 // fetch data from canbus
 bool canbus_fetch() {
