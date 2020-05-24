@@ -55,7 +55,7 @@ char debugBuffer[255];
 
 // engine warning light states
 #define MIL_FLASH 0xC0
-#define MIL_ON 0x04
+#define MIL_ON 0x40
 #define MIL_OFF 0x00
 
 #define DEFAULT_COOLANT 0x00
