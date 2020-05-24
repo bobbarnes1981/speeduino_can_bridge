@@ -41,10 +41,22 @@ char debugBuffer[255];
 #define LED_TIME 500
 #define LED_PIN 9
 
-#define SPEEDUINO_FETCH_INTERVAL 1000
-#define CANBUS_FETCH_INTERVAL 2000
-#define CANBUS_SEND201_INTERVAL 3000
-#define CANBUS_SEND420_INTERVAL 6000
+// minimum interval for actions
+#define SPEEDUINO_FETCH_INTERVAL 100
+#define CANBUS_FETCH_INTERVAL 100
+#define CANBUS_SEND201_INTERVAL 100
+#define CANBUS_SEND420_INTERVAL 100
+
+// maximum interval for actions
+#define SPEEDUINO_FETCH_DELAYED 500
+#define CANBUS_FETCH_DELAYED 500
+#define CANBUS_SEND201_DELAYED 500
+#define CANBUS_SEND420_DELAYED 500
+
+// engine warning light states
+#define MIL_FLASH 0xC0
+#define MIL_ON 0x04
+#define MIL_OFF 0x00
 
 byte dataCoolant; // current coolant
 word dataRpm;     // current rpm
@@ -57,6 +69,12 @@ unsigned long speeduinoFetchLastMillis;
 unsigned long canbusFetchLastMillis;
 unsigned long canbusSend201LastMillis;
 unsigned long canbusSend420LastMillis;
+
+// action delayed flags
+bool speeduinoFetchDelayed = false;
+bool canbusFetchDelayed = false;
+bool canbusSend201Delayed = false;
+bool canbusSend420Delayed = false;
 
 // true if request sent to speeduino
 // false if awaiting response
@@ -123,29 +141,48 @@ void loop() {
     } else {
       if (speeduino_read()) {
         speeduinoFetchLastMillis = currentMillis;
+        speeduinoFetchDelayed = false;
       }
+    }
+    if (currentMillis - speeduinoFetchLastMillis >= SPEEDUINO_FETCH_DELAYED) {
+      speeduino_reset_data();
+      speeduinoFetchDelayed = true;
     }
   }
 
   if (currentMillis - canbusFetchLastMillis >= CANBUS_FETCH_INTERVAL) {
     if (canbus_fetch()) {
       canbusFetchLastMillis = currentMillis;
+      canbusFetchDelayed = false;
+    }
+    if (currentMillis - canbusFetchLastMillis >= CANBUS_FETCH_DELAYED) {
+      canbus_reset_data();
+      canbusFetchDelayed = true;
     }
   }
 
   if (currentMillis - canbusSend201LastMillis >= CANBUS_SEND201_INTERVAL) {
     if (canbus_send_201()) {
       canbusSend201LastMillis = currentMillis;
+      canbusSend201Delayed = false;
+    }
+    if (currentMillis - canbusSend201LastMillis >= CANBUS_SEND201_DELAYED) {
+      canbusSend201Delayed = true;
     }
   }
 
   if (currentMillis - canbusSend420LastMillis >= CANBUS_SEND420_INTERVAL) {
     if (canbus_send_420()) {
       canbusSend420LastMillis = currentMillis;
+      canbusSend420Delayed = false;
+    }
+    if (currentMillis - canbusSend420LastMillis >= CANBUS_SEND420_DELAYED) {
+      canbusSend420Delayed = true;
     }
   }
 }
 
+// request data from speeduino
 void speeduino_request() {
   #ifdef DEBUG
   sprintf(debugBuffer, "sending serial request 0x%02X 0x%02X", SPEEDUINO_COMMAND, SPEEDUINO_COMMAND_TYPE);
@@ -163,6 +200,7 @@ void speeduino_request() {
   speeduinoRequested = true;
 }
 
+// attempt to read data from speeduino
 bool speeduino_read() {
   if (speeduino.available() >= DATA_TO_REQUEST + 2) {
     char cmd = speeduino.read();
@@ -200,6 +238,13 @@ bool speeduino_read() {
   return false;
 }
 
+// reset data from speeduino
+void speeduino_reset_data() {
+  dataCoolant = 0x00;
+  dataRpm = 0x0000;
+}
+
+// fetch data from canbus
 bool canbus_fetch() {
   MCP2515::ERROR e = mcp2515.readMessage(&canMsg4B0);
   if (e == MCP2515::ERROR_OK) {
@@ -230,6 +275,12 @@ bool canbus_fetch() {
   return false;
 }
 
+// reset data from canbus
+void canbus_reset_data() {
+  dataSpeed = 0x0000;
+}
+
+// send canbus 0x201 message
 bool canbus_send_201() {
   #ifdef DEBUG
   debugger.println("sending 201");
@@ -264,29 +315,32 @@ bool canbus_send_201() {
   return e == MCP2515::ERROR_OK;
 }
 
+// send canbus 0x420 message
 bool canbus_send_420() {
   debugger.println("sending 420");
+
+  byte milState = get_mil();
 
   #ifdef DEBUG
   sprintf(debugBuffer, "coolant: %d", dataCoolant);
   debugger.println(debugBuffer);
+  sprintf(debugBuffer, "mil: 0x%02X", milState);
   #endif
   
   byte adjustedCoolant;
-  
   if (dataCoolant<=60) adjustedCoolant=0x28;
   else if (dataCoolant<=74) adjustedCoolant=0x63;
   else if (dataCoolant<=90) adjustedCoolant=0x88;
   else if (dataCoolant<=99) adjustedCoolant=0x9C;
   else adjustedCoolant=0xD0;
-  
+
   canMsg420.can_id = 0x420;
   canMsg420.can_dlc = 8;
   canMsg420.data[0] = adjustedCoolant;      // ect
   canMsg420.data[1] = 0x00;                 // pres.
   canMsg420.data[2] = 0x00;                 // fuel flow
   canMsg420.data[3] = 0x00;                 // prndl
-  canMsg420.data[4] = 0x00;                 // MIL/overdrive
+  canMsg420.data[4] = milState;             // MIL/overdrive
   canMsg420.data[5] = 0x00;                 // safe cooling/PATS
   canMsg420.data[6] = 0x00;                 // charging system status
   canMsg420.data[7] = 0x00;                 // engine off elapsed time
@@ -299,4 +353,22 @@ bool canbus_send_420() {
   #endif
   
   return e == MCP2515::ERROR_OK;
+}
+
+// get MIL state
+byte get_mil() {
+  byte milState = MIL_OFF;
+  if (speeduinoFetchDelayed) {
+    milState |= MIL_FLASH;
+  }
+  if (canbusFetchDelayed) {
+    milState |= MIL_FLASH;
+  }
+  if (canbusSend201Delayed) {
+    milState |= MIL_FLASH;
+  }
+  if (canbusSend420Delayed) {
+    milState |= MIL_FLASH;
+  }
+  return milState;
 }
