@@ -24,7 +24,7 @@ char debugBuffer[255];
 #define SW_SERIAL_TX 8
 #endif
 
-#define SPEEDUINO_CANID 0x5A1
+#define SPEEDUINO_CANID 0x510
 #define SPEEDUINO_COMMAND 'r'
 #define SPEEDUINO_COMMAND_TYPE 0x30
 #define SPEEDUINO_BAUD 115200
