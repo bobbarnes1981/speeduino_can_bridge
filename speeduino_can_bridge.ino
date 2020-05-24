@@ -2,6 +2,7 @@
 #include <mcp2515.h>
 
 #define DEBUG
+#define RESEND_DELAYED_REQUEST
 
 #ifdef __AVR_ATmega2560__
 #define USE_HW_SERIAL3
@@ -149,8 +150,15 @@ void loop() {
       }
     }
     if (currentMillis - speeduinoFetchLastMillis >= SPEEDUINO_FETCH_DELAYED) {
+      #ifdef RESEND_DELAYED_REQUEST
+      speeduinoRequested = false;
+      #endif
       speeduino_reset_data();
       speeduinoFetchDelayed = true;
+
+      #ifdef DEBUG
+      debugger.println("speeduino request delayed");
+      #endif
     }
   }
 
@@ -162,6 +170,10 @@ void loop() {
     if (currentMillis - canbusFetchLastMillis >= CANBUS_FETCH_DELAYED) {
       canbus_reset_data();
       canbusFetchDelayed = true;
+
+      #ifdef DEBUG
+      debugger.println("canbus fetch delayed");
+      #endif
     }
   }
 
