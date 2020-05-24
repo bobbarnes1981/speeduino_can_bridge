@@ -58,9 +58,13 @@ char debugBuffer[255];
 #define MIL_ON 0x04
 #define MIL_OFF 0x00
 
-byte dataCoolant; // current coolant
-word dataRpm;     // current rpm
-word dataSpeed;   // current speed
+#define DEFAULT_COOLANT 0x00
+#define DEFAULT_RPM 0x0000
+#define DEFAULT_SPEED 0x2710
+
+byte dataCoolant = DEFAULT_COOLANT; // current coolant
+word dataRpm = DEFAULT_RPM;         // current rpm
+word dataSpeed = DEFAULT_SPEED;     // current speed
 
 unsigned long currentMillis;
 
@@ -240,8 +244,8 @@ bool speeduino_read() {
 
 // reset data from speeduino
 void speeduino_reset_data() {
-  dataCoolant = 0x00;
-  dataRpm = 0x0000;
+  dataCoolant = DEFAULT_COOLANT;
+  dataRpm = DEFAULT_RPM;
 }
 
 // fetch data from canbus
@@ -277,7 +281,7 @@ bool canbus_fetch() {
 
 // reset data from canbus
 void canbus_reset_data() {
-  dataSpeed = 0x0000;
+  dataSpeed = DEFAULT_SPEED;
 }
 
 // send canbus 0x201 message
