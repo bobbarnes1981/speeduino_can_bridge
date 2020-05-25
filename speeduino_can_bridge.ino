@@ -160,13 +160,15 @@ void loop() {
       #ifdef RESEND_DELAYED_REQUEST
       speeduinoRequested = false;
       #endif
-      
-      speeduino_reset_data();
-      speeduinoFetchDelayed = true;
 
       #ifdef RESTART_DELAYED_REQUEST
       speeduino_restart();
       #endif
+      
+      speeduino_reset_data();
+      
+      speeduinoFetchLastMillis = currentMillis;
+      speeduinoFetchDelayed = true;
 
       #ifdef DEBUG
       debugger.println("speeduino request delayed");
@@ -181,6 +183,8 @@ void loop() {
     }
     if (currentMillis - canbusFetchLastMillis >= CANBUS_FETCH_DELAYED) {
       canbus_reset_data();
+      
+      canbusFetchLastMillis = currentMillis;
       canbusFetchDelayed = true;
 
       #ifdef DEBUG
@@ -195,6 +199,7 @@ void loop() {
       canbusSend201Delayed = false;
     }
     if (currentMillis - canbusSend201LastMillis >= CANBUS_SEND201_DELAYED) {
+      canbusSend201LastMillis = currentMillis;
       canbusSend201Delayed = true;
     }
   }
@@ -205,6 +210,7 @@ void loop() {
       canbusSend420Delayed = false;
     }
     if (currentMillis - canbusSend420LastMillis >= CANBUS_SEND420_DELAYED) {
+      canbusSend420LastMillis = currentMillis;
       canbusSend420Delayed = true;
     }
   }
