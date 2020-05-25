@@ -89,7 +89,7 @@ bool canbusSend420Delayed = false;
 bool speeduinoRequested = false;
 
 #ifdef RESTART_DELAYED_REQUEST
-bool speeduinoFetchDelayedCount = 0;
+int speeduinoFetchDelayedCount = 0;
 #endif
 
 #ifdef DEBUG
@@ -274,7 +274,13 @@ void speeduino_reset_data() {
 
 #ifdef RESTART_DELAYED_REQUEST
 void speeduino_restart() {
-  speeduinoFetchDelayedCount++;
+  speeduinoFetchDelayedCount = speeduinoFetchDelayedCount + 1;
+
+  #ifdef DEBUG
+  sprintf(debugBuffer, "%i of %i delayed requests", speeduinoFetchDelayedCount, SPEEDUINO_RESTART_COUNT);
+  debugger.println(debugBuffer);
+  #endif
+
   if (speeduinoFetchDelayedCount >= SPEEDUINO_RESTART_COUNT) {
     #ifdef DEBUG
     debugger.println("restarting speeduio serial connection");
