@@ -32,7 +32,7 @@ bool canbus_fetch() {
 
 // reset data from canbus
 void canbus_reset_data() {
-  dataSpeed = DEFAULT_SPEED;
+  dataSpeed = MIN_SPEED;
 }
 
 // send canbus 0x201 message

@@ -1,41 +1,20 @@
 
 void bridge_startup() {
-  if (currentMillis - startupLastMillis >= STARTUP_SWEEP_MILLIS / STARTUP_SWEEP_STEPS) {
-    int speedStep = (STARTUP_SPEED_MAX - STARTUP_SPEED_MIN) / (STARTUP_SWEEP_STEPS * 2);
-    int rpmStep = (STARTUP_RPM_MAX - STARTUP_RPM_MIN) / (STARTUP_SWEEP_STEPS * 2);
-
-    #ifdef DEBUG
-    sprintf(debugBuffer, "Step RPM: %i", rpmStep);
-    debugger.println(debugBuffer);
-    sprintf(debugBuffer, "Step Speed: %i", speedStep);
-    debugger.println(debugBuffer);
-    #endif
-  
+  if (currentMillis - startupLastMillis >= STARTUP_SWEEP_DELAY) {
     if (startupSweepingUp) {
-      startupRpmSweep += rpmStep;
-      startupSpeedSweep += speedStep;
-      if (startupRpmSweep >= STARTUP_RPM_MAX || startupSpeedSweep >= STARTUP_SPEED_MAX) {
-        startupSweepingUp = false;
-        startupRpmSweep = STARTUP_RPM_MAX;
-        startupSpeedSweep = STARTUP_SPEED_MAX;
-      }
+      dataRpm = MAX_RPM;
+      dataSpeed = MAX_SPEED;
+      startupSweepingUp = false;
     } else {
-      startupRpmSweep -= rpmStep;
-      startupSpeedSweep -= speedStep;
-      if (startupRpmSweep <= STARTUP_RPM_MIN || startupSpeedSweep <= STARTUP_SPEED_MIN) {
-        bridgeStartup = false;
-        startupRpmSweep = STARTUP_RPM_MIN;
-        startupSpeedSweep = STARTUP_SPEED_MIN;
-      }
+      dataRpm = MIN_RPM;
+      dataSpeed = MIN_SPEED;
+      bridgeStartup = false;
     }
 
-    dataRpm = startupRpmSweep;
-    dataSpeed = startupSpeedSweep;
-
     #ifdef DEBUG
-    sprintf(debugBuffer, "Startup RPM: %i", startupRpmSweep);
+    sprintf(debugBuffer, "Startup RPM: %i", dataRpm);
     debugger.println(debugBuffer);
-    sprintf(debugBuffer, "Startup Speed: %i", startupSpeedSweep);
+    sprintf(debugBuffer, "Startup Speed: %i", dataSpeed);
     debugger.println(debugBuffer);
     #endif
 

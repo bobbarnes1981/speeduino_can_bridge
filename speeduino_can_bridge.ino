@@ -62,20 +62,18 @@ char debugBuffer[255];
 #define MIL_ON 0x40
 #define MIL_OFF 0x00
 
-#define DEFAULT_COOLANT 0x00
-#define DEFAULT_RPM 0x0000
-#define DEFAULT_SPEED 0x2710
+#define MIN_COOLANT 0x00  // 0c
+#define MAX_COOLANT 0xFF  // ?
+#define MIN_RPM 0x0000    // 0rpm
+#define MAX_RPM 0x7D00    // 8000rpm
+#define MIN_SPEED 0x2710  // 0mph
+#define MAX_SPEED 0x7FD7  // 150mph
 
-#define STARTUP_RPM_MIN DEFAULT_RPM     // 0rpm
-#define STARTUP_RPM_MAX 0x1F40          // 8000rpm
-#define STARTUP_SPEED_MIN DEFAULT_SPEED // 0mph
-#define STARTUP_SPEED_MAX 0x7FD7        // 150mph
-#define STARTUP_SWEEP_MILLIS 1000       // sweep in 1000 millis
-#define STARTUP_SWEEP_STEPS 10          // sweep in 10 steps
+#define STARTUP_SWEEP_DELAY 1000
 
-byte dataCoolant = DEFAULT_COOLANT; // current coolant
-word dataRpm = DEFAULT_RPM;         // current rpm
-word dataSpeed = DEFAULT_SPEED;     // current speed
+byte dataCoolant = MIN_COOLANT; // current coolant
+word dataRpm = MIN_RPM;         // current rpm
+word dataSpeed = MIN_SPEED;     // current speed
 
 unsigned long currentMillis;
 
@@ -97,9 +95,7 @@ bool speeduinoRequested = false;
 
 bool bridgeStartup = true;
 bool startupSweepingUp = true;
-int startupRpmSweep = STARTUP_RPM_MIN;
-int startupSpeedSweep = STARTUP_SPEED_MIN;
-unsigned long startupLastMillis = 0;
+unsigned long startupLastMillis = -STARTUP_SWEEP_DELAY;
 
 #ifdef RESTART_DELAYED_REQUEST
 int speeduinoFetchDelayedCount = 0;

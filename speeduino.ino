@@ -57,8 +57,8 @@ bool speeduino_read() {
 
 // reset data from speeduino
 void speeduino_reset_data() {
-  dataCoolant = DEFAULT_COOLANT;
-  dataRpm = DEFAULT_RPM;
+  dataCoolant = MIN_COOLANT;
+  dataRpm = MIN_RPM;
 }
 
 #ifdef RESTART_DELAYED_REQUEST
