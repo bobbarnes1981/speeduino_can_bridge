@@ -8,7 +8,7 @@ void bridge_startup() {
     } else {
       dataRpm = MIN_RPM;
       dataSpeed = MIN_SPEED;
-      bridgeStartup = false;
+      startupSweep = false;
     }
 
     #ifdef DEBUG

@@ -69,6 +69,7 @@ char debugBuffer[255];
 #define MIN_SPEED 0x2710  // 0mph
 #define MAX_SPEED 0x7FD7  // 150mph
 
+#define STARTUP_SWEEP false       // disable startup sweep, it doesn't work
 #define STARTUP_SWEEP_DELAY 1000
 
 byte dataCoolant = MIN_COOLANT; // current coolant
@@ -93,7 +94,7 @@ bool canbusSend420Delayed = false;
 // false if awaiting response
 bool speeduinoRequested = false;
 
-bool bridgeStartup = true;
+bool startupSweep = STARTUP_SWEEP;
 bool startupSweepingUp = true;
 unsigned long startupLastMillis = -STARTUP_SWEEP_DELAY;
 
@@ -151,7 +152,7 @@ void loop() {
   // flash the LED on LED_PIN once per LED_TIME
   digitalWrite(LED_PIN, (millis() % LED_TIME) > LED_TIME / 2);
 
-  if (bridgeStartup) {
+  if (startupSweep) {
     bridge_startup();
   } else {
     bridge_running();
