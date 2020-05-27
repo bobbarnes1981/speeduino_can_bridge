@@ -71,6 +71,7 @@ char debugBuffer[255];
 #define STARTUP_SPEED_MIN DEFAULT_SPEED // 0mph
 #define STARTUP_SPEED_MAX 0x7FD7        // 150mph
 #define STARTUP_SWEEP_MILLIS 1000       // sweep in 1000 millis
+#define STARTUP_SWEEP_STEPS 10          // sweep in 10 steps
 
 byte dataCoolant = DEFAULT_COOLANT; // current coolant
 word dataRpm = DEFAULT_RPM;         // current rpm
@@ -98,7 +99,7 @@ bool bridgeStartup = true;
 bool startupSweepingUp = true;
 int startupRpmSweep = STARTUP_RPM_MIN;
 int startupSpeedSweep = STARTUP_SPEED_MIN;
-unsigned long startupMillis;
+unsigned long startupLastMillis = 0;
 
 #ifdef RESTART_DELAYED_REQUEST
 int speeduinoFetchDelayedCount = 0;
@@ -146,8 +147,6 @@ void setup() {
   #endif
   debugger.println(debugBuffer);
   #endif
-
-  startupMillis = millis();
 }
 
 void loop() {
