@@ -66,6 +66,12 @@ char debugBuffer[255];
 #define DEFAULT_RPM 0x0000
 #define DEFAULT_SPEED 0x2710
 
+#define STARTUP_RPM_MIN DEFAULT_RPM     // 0rpm
+#define STARTUP_RPM_MAX 0x1F40          // 8000rpm
+#define STARTUP_SPEED_MIN DEFAULT_SPEED // 0mph
+#define STARTUP_SPEED_MAX 0x7FD7        // 150mph
+#define STARTUP_SWEEP_MILLIS 1000       // sweep in 1000 millis
+
 byte dataCoolant = DEFAULT_COOLANT; // current coolant
 word dataRpm = DEFAULT_RPM;         // current rpm
 word dataSpeed = DEFAULT_SPEED;     // current speed
@@ -87,6 +93,12 @@ bool canbusSend420Delayed = false;
 // true if request sent to speeduino
 // false if awaiting response
 bool speeduinoRequested = false;
+
+bool bridgeStartup = true;
+bool startupSweepingUp = true;
+int startupRpmSweep = STARTUP_RPM_MIN;
+int startupSpeedSweep = STARTUP_SPEED_MIN;
+unsigned long startupMillis;
 
 #ifdef RESTART_DELAYED_REQUEST
 int speeduinoFetchDelayedCount = 0;
@@ -134,6 +146,8 @@ void setup() {
   #endif
   debugger.println(debugBuffer);
   #endif
+
+  startupMillis = millis();
 }
 
 void loop() {
@@ -142,72 +156,10 @@ void loop() {
   // flash the LED on LED_PIN once per LED_TIME
   digitalWrite(LED_PIN, (millis() % LED_TIME) > LED_TIME / 2);
 
-  if (currentMillis - speeduinoFetchLastMillis >= SPEEDUINO_FETCH_INTERVAL) {
-    if (!speeduinoRequested) {
-      speeduino_request();
-    } else {
-      if (speeduino_read()) {
-        speeduinoFetchLastMillis = currentMillis;
-        speeduinoFetchDelayed = false;
-      }
-    }
-    if (currentMillis - speeduinoFetchLastMillis >= SPEEDUINO_FETCH_DELAYED) {
-      #ifdef RESEND_DELAYED_REQUEST
-      speeduinoRequested = false;
-      #endif
-
-      #ifdef RESTART_DELAYED_REQUEST
-      speeduino_restart();
-      #endif
-      
-      speeduino_reset_data();
-      
-      speeduinoFetchLastMillis = currentMillis;
-      speeduinoFetchDelayed = true;
-
-      #ifdef DEBUG
-      debugger.println("speeduino request delayed");
-      #endif
-    }
-  }
-
-  if (currentMillis - canbusFetchLastMillis >= CANBUS_FETCH_INTERVAL) {
-    if (canbus_fetch()) {
-      canbusFetchLastMillis = currentMillis;
-      canbusFetchDelayed = false;
-    }
-    if (currentMillis - canbusFetchLastMillis >= CANBUS_FETCH_DELAYED) {
-      canbus_reset_data();
-      
-      canbusFetchLastMillis = currentMillis;
-      canbusFetchDelayed = true;
-
-      #ifdef DEBUG
-      debugger.println("canbus fetch delayed");
-      #endif
-    }
-  }
-
-  if (currentMillis - canbusSend201LastMillis >= CANBUS_SEND201_INTERVAL) {
-    if (canbus_send_201()) {
-      canbusSend201LastMillis = currentMillis;
-      canbusSend201Delayed = false;
-    }
-    if (currentMillis - canbusSend201LastMillis >= CANBUS_SEND201_DELAYED) {
-      canbusSend201LastMillis = currentMillis;
-      canbusSend201Delayed = true;
-    }
-  }
-
-  if (currentMillis - canbusSend420LastMillis >= CANBUS_SEND420_INTERVAL) {
-    if (canbus_send_420()) {
-      canbusSend420LastMillis = currentMillis;
-      canbusSend420Delayed = false;
-    }
-    if (currentMillis - canbusSend420LastMillis >= CANBUS_SEND420_DELAYED) {
-      canbusSend420LastMillis = currentMillis;
-      canbusSend420Delayed = true;
-    }
+  if (bridgeStartup) {
+    bridge_startup();
+  } else {
+    bridge_running();
   }
 }
 
