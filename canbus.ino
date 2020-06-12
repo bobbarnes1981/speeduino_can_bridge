@@ -83,11 +83,11 @@ bool canbus_send_420() {
   #endif
   
   byte adjustedCoolant;
-  if (dataCoolant<=60) adjustedCoolant=0x28;
-  else if (dataCoolant<=74) adjustedCoolant=0x63;
-  else if (dataCoolant<=90) adjustedCoolant=0x88;
-  else if (dataCoolant<=99) adjustedCoolant=0x9C;
-  else adjustedCoolant=0xD0;
+  if (dataCoolant<=60) adjustedCoolant=0x28; // if less than 60 degrees c
+  else if (dataCoolant<=74) adjustedCoolant=0x63; // if less than 74 degrees c
+  else if (dataCoolant<=90) adjustedCoolant=0x88; // if less than 90 degrees c
+  else if (dataCoolant<=99) adjustedCoolant=0x9C; // if less than 99 degrees c
+  else adjustedCoolant=0xD0; // 100 degrees c and over
 
   canMsg420.can_id = 0x420;
   canMsg420.can_dlc = 8;
