@@ -33,6 +33,7 @@ char debugBuffer[255];
 #define SPEEDUINO_BAUD 115200
 #define SPEEDUINO_RESTART_COUNT 10
 
+// speeduino serial data config
 #define DATA_TO_REQUEST 16
 #define COOLANT_OFFSET 7
 #define RPM_OFFSET_LO 14
@@ -42,6 +43,7 @@ char debugBuffer[255];
 #define MCP2515_BITRATE CAN_500KBPS
 #define MCP2515_CLOCK MCP_8MHZ
 
+// heartbeat LED
 #define LED_TIME 500
 #define LED_PIN 9
 
@@ -58,9 +60,9 @@ char debugBuffer[255];
 #define CANBUS_SEND420_DELAYED 500
 
 // engine warning light states
-#define MIL_FLASH 0xC0
-#define MIL_ON 0x40
-#define MIL_OFF 0x00
+#define MIL_FLASH 0xC0  // 1100 0000 : bit 7 flash MIL
+#define MIL_ON 0x40     // 0100 0000 : bit 6 enable MIL
+#define MIL_OFF 0x00    // 0000 0000
 
 #define MIN_COOLANT 0x00  // 0c
 #define MAX_COOLANT 0xFF  // ?
@@ -68,9 +70,6 @@ char debugBuffer[255];
 #define MAX_RPM 0x7D00    // 8000rpm
 #define MIN_SPEED 0x2710  // 0mph
 #define MAX_SPEED 0x7FD7  // 150mph
-
-#define STARTUP_SWEEP false       // disable startup sweep, it doesn't work
-#define STARTUP_SWEEP_DELAY 1000
 
 byte dataCoolant = MIN_COOLANT; // current coolant
 word dataRpm = MIN_RPM;         // current rpm
@@ -93,10 +92,6 @@ bool canbusSend420Delayed = false;
 // true if request sent to speeduino
 // false if awaiting response
 bool speeduinoRequested = false;
-
-bool startupSweep = STARTUP_SWEEP;
-bool startupSweepingUp = true;
-unsigned long startupLastMillis = -STARTUP_SWEEP_DELAY;
 
 #ifdef RESTART_DELAYED_REQUEST
 int speeduinoFetchDelayedCount = 0;
@@ -152,11 +147,7 @@ void loop() {
   // flash the LED on LED_PIN once per LED_TIME
   digitalWrite(LED_PIN, (millis() % LED_TIME) > LED_TIME / 2);
 
-  if (startupSweep) {
-    bridge_startup();
-  } else {
-    bridge_running();
-  }
+  bridge_running();
 }
 
 // get MIL state

@@ -1,30 +1,4 @@
 
-void bridge_startup() {
-  if (currentMillis - startupLastMillis >= STARTUP_SWEEP_DELAY) {
-    if (startupSweepingUp) {
-      dataRpm = MAX_RPM;
-      dataSpeed = MAX_SPEED;
-      startupSweepingUp = false;
-    } else {
-      dataRpm = MIN_RPM;
-      dataSpeed = MIN_SPEED;
-      startupSweep = false;
-    }
-
-    #ifdef DEBUG
-    sprintf(debugBuffer, "Startup RPM: %i", dataRpm);
-    debugger.println(debugBuffer);
-    sprintf(debugBuffer, "Startup Speed: %i", dataSpeed);
-    debugger.println(debugBuffer);
-    #endif
-
-    canbus_send_201();
-    canbus_send_420();
-
-    startupLastMillis = currentMillis;
-  }
-}
-
 void bridge_running() {
   if (currentMillis - speeduinoFetchLastMillis >= SPEEDUINO_FETCH_INTERVAL) {
     if (!speeduinoRequested) {
